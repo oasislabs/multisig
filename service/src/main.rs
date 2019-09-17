@@ -15,6 +15,9 @@ pub enum Error {
     #[fail(display = "Transaction not confirmed.")]
     TransactionNotConfirmed,
 
+    #[fail(display = "Transaction already executed.")]
+    TransactionRepeat,
+
     #[fail(display = "Transaction errored.")]
     TransactionError,
 }
@@ -119,6 +122,9 @@ impl Multisig {
         let transaction = transaction_check.unwrap();
         if transaction.confirmations.len() < self.required as usize {
             return Err(Error::TransactionNotConfirmed);
+        }
+        if transaction.executed {
+            return Err(Error::TransactionRepeat);
         }
         let context = Context::delegated().with_value(transaction.value as u128);
         match transaction.destination.call(&context, &transaction.data) {
