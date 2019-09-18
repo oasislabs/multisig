@@ -22,7 +22,7 @@ pub enum Error {
     TransactionError,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Transaction {
     destination: Address,
     value: u64,
@@ -74,6 +74,13 @@ impl Multisig {
             return Err(Error::TransactionNotExists);
         }
         Ok(transaction.unwrap())
+    }
+
+    pub fn get_required(&self, ctx: &Context) -> Result<u32, Error> {
+        if !self.owners.contains(&ctx.sender()) {
+            return Err(Error::MustBeOwner);
+        }
+        Ok(self.required)
     }
 
     pub fn confirm_transaction(&mut self, ctx: &Context, transaction_id: u32) -> Result<(), Error> {
@@ -148,9 +155,52 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test() {
+    fn test_getters() {
         let sender = oasis_test::create_account(1);
+        let unauthorized = oasis_test::create_account(1);
         let ctx = Context::default().with_sender(sender);
-        let client = Multisig::new(&ctx);
+        let unauthorized_ctx = Context::default().with_sender(unauthorized);
+        let mut addresses = Set::new();
+        addresses.insert(sender);
+        let mut client = Multisig::new(&ctx, addresses, 1);
+        let destination = oasis_test::create_account(0);
+        let value = 1;
+        let tx_data = vec![1u8, 2, 3];
+        let tx = Transaction {
+            destination: destination.clone(),
+            value: value,
+            data: tx_data.clone(),
+            executed: false,
+            confirmations: Set::new(),
+        };
+
+        assert_eq!(client.get_required(&ctx).unwrap(), 1);
+        assert_eq!(client.add_transaction(&ctx, destination.clone(), value, tx_data.clone()).unwrap(), 0);
+        assert_eq!(client.get_transaction(&unauthorized_ctx, 0), Err(Error::MustBeOwner));
+        assert_eq!(client.get_transaction(&ctx, 0).unwrap(), &tx);
+    }
+
+    #[test]
+    fn test_confirmation() {
+        let sender1 = oasis_test::create_account(1);
+        let sender2 = oasis_test::create_account(1);
+        let ctx1 = Context::default().with_sender(sender1);
+        let ctx2 = Context::default().with_sender(sender2);
+        let mut addresses = Set::new();
+        addresses.insert(sender1);
+        addresses.insert(sender2);
+        let mut client = Multisig::new(&ctx1, addresses, 2);
+        let destination = oasis_test::create_account(0);
+        let value = 1;
+        let tx_data = vec![1u8, 2, 3];
+
+        assert_eq!(client.add_transaction(&ctx1, destination.clone(), value, tx_data.clone()).unwrap(), 0);
+        assert_eq!(client.is_confirmed(&ctx1, 0).unwrap(), false);
+        assert_eq!(client.confirm_transaction(&ctx1, 0), Ok(()));
+        assert_eq!(client.is_confirmed(&ctx1, 0).unwrap(), false);
+        assert_eq!(client.confirm_transaction(&ctx2, 0), Ok(()));
+        assert_eq!(client.is_confirmed(&ctx1, 0).unwrap(), true);
+        assert_eq!(client.revoke_confirmation(&ctx2, 0), Ok(()));
+        assert_eq!(client.is_confirmed(&ctx1, 0).unwrap(), false);
     }
 }
