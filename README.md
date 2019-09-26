@@ -7,7 +7,7 @@ For example,
 
     Signature 1 ---
                    |
-    Signature 2 ---|----- Multisig Service ---- Service Requiring MultiSig
+    Signature 2 ---|----- Multisig Service ---- Service Requiring Multisig
                    |
     Signature 3 ---
 
