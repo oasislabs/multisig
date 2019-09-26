@@ -1,7 +1,15 @@
 # Multisig
 
 ## Introduction
-This is an example service that implements transactions that require multiple signatures. In any case where you may require that mulitple different parties sign off on a transaction before executing it, you can use this service to enforce that policy. 
+This is an example service that implements transactions that require multiple signatures. If you require mulitple parties to sign off on a transaction before executing it, you can use this service to enforce that policy.
+
+For example,  
+
+    S1 ---
+          |
+    S2 ---|----- Multisig Service ---- Service Requiring MultiSig
+          |
+    S3 ---
 
 ## Service
 The service acts as a simple aggregator of confirmations from different addresses. It is immutable in terms of which addresses can provide confirmations and how many confirmations are required for a transaction to be considered "confirmed". Thus it must be initialized with a list of all the expected signers. If a signer needs to be added or removed, a new service must be deployed. 
