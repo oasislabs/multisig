@@ -68,8 +68,10 @@ describe('Test', () => {
         // expect(req).toEqual(1);
         let owner = Buffer.from((await multisig.getOwners())[0]).toString('hex');
         console.log(owner);
+        // MUST HAVE GAS LIMIT OTHERWISE FAILS WITH Host(GasLimit)
         console.log(await multisig.check({gasLimit: '0xF42400'}));
         console.log(counter_address);
+        // CHECK oasis-chain LOGS TO SEE THAT THE SENDER IS ALL 0.
         expect(await multisig.addTransaction(counter_address, 0, txData)).toEqual(0);
       }
     }
