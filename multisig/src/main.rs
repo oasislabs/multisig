@@ -3,6 +3,8 @@ extern crate serde;
 
 use map_vec::{Map, Set};
 use oasis_std::{Context, Address, AddressExt};
+use std::iter::FromIterator;
+use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize, failure::Fail)]
 pub enum Error {
@@ -40,10 +42,10 @@ struct Multisig {
 }
 
 impl Multisig {
-    pub fn new(_ctx: &Context, owners: Set<Address>, required: u32) -> Self {
+    pub fn new(_ctx: &Context, addresses: Vec<String>, required: u32) -> Self {
         Self {
             transactions: Map::new(),
-            owners: owners,
+            owners: Set::from_iter(addresses.iter().map(|a| Address::from_str(a).unwrap())),
             required: required,
             transaction_count: 0,
         }
@@ -160,8 +162,8 @@ mod tests {
         let unauthorized = oasis_test::create_account(1);
         let ctx = Context::default().with_sender(sender);
         let unauthorized_ctx = Context::default().with_sender(unauthorized);
-        let mut addresses = Set::new();
-        addresses.insert(sender);
+        let mut addresses = Vec::new();
+        addresses.push((&sender.to_string()[2..]).to_string());
         let mut client = Multisig::new(&ctx, addresses, 1);
         let destination = oasis_test::create_account(0);
         let value = 1;
@@ -186,9 +188,9 @@ mod tests {
         let sender2 = oasis_test::create_account(1);
         let ctx1 = Context::default().with_sender(sender1);
         let ctx2 = Context::default().with_sender(sender2);
-        let mut addresses = Set::new();
-        addresses.insert(sender1);
-        addresses.insert(sender2);
+        let mut addresses = Vec::new();
+        addresses.push((&sender1.to_string()[2..]).to_string());
+        addresses.push((&sender2.to_string()[2..]).to_string());
         let mut client = Multisig::new(&ctx1, addresses, 2);
         let destination = oasis_test::create_account(0);
         let value = 1;
