@@ -51,12 +51,15 @@ impl Multisig {
         }
     }
 
-    pub fn add_transaction(&mut self, ctx: &Context, destination: Address, value: u64, data: Vec<u8>) -> Result<u32, Error> {
+    pub fn add_transaction(&mut self, ctx: &Context, destination: String, value: u64, data: Vec<u8>) -> Result<u32, Error> {
+        eprintln!("Owner? {}", self.owners.contains(&ctx.sender()));
+        eprintln!("Sender {}", ctx.sender());
+        eprintln!("Owners {:?}", self.owners);
         if !self.owners.contains(&ctx.sender()) {
             return Err(Error::MustBeOwner);
         }
         let transaction = Transaction {
-            destination: destination,
+            destination: Address::from_str(&destination).unwrap(),
             value: value,
             data: data,
             executed: false,
@@ -78,10 +81,24 @@ impl Multisig {
         Ok(transaction.unwrap())
     }
 
+    pub fn get_owners(&self, ctx: &Context) -> Result<&Set<Address>, Error> {
+        // if !self.owners.contains(&ctx.sender()) {
+        //     return Err(Error::MustBeOwner);
+        // }
+        eprintln!("GetOwners sender {}", ctx.sender());
+        Ok(&self.owners)
+    }
+
+    pub fn check(&self, ctx: &Context) -> Result<bool, Error> {        eprintln!("Sender {}", ctx.sender());
+        eprintln!("Check sender {}", ctx.sender());
+
+        Ok(self.owners.contains(&ctx.sender()))
+    }
+
     pub fn get_required(&self, ctx: &Context) -> Result<u32, Error> {
-        if !self.owners.contains(&ctx.sender()) {
-            return Err(Error::MustBeOwner);
-        }
+        // if !self.owners.contains(&ctx.sender()) {
+        //     return Err(Error::MustBeOwner);
+        // }
         Ok(self.required)
     }
 
@@ -166,6 +183,7 @@ mod tests {
         addresses.push((&sender.to_string()[2..]).to_string());
         let mut client = Multisig::new(&ctx, addresses, 1);
         let destination = oasis_test::create_account(0);
+        let dest_address = (&destination.to_string()[2..]).to_string();
         let value = 1;
         let tx_data = vec![1u8, 2, 3];
         let tx = Transaction {
@@ -177,7 +195,7 @@ mod tests {
         };
 
         assert_eq!(client.get_required(&ctx).unwrap(), 1);
-        assert_eq!(client.add_transaction(&ctx, destination.clone(), value, tx_data.clone()).unwrap(), 0);
+        assert_eq!(client.add_transaction(&ctx, dest_address.clone(), value, tx_data.clone()).unwrap(), 0);
         assert_eq!(client.get_transaction(&unauthorized_ctx, 0), Err(Error::MustBeOwner));
         assert_eq!(client.get_transaction(&ctx, 0).unwrap(), &tx);
     }
@@ -193,10 +211,11 @@ mod tests {
         addresses.push((&sender2.to_string()[2..]).to_string());
         let mut client = Multisig::new(&ctx1, addresses, 2);
         let destination = oasis_test::create_account(0);
+        let dest_address = (&destination.to_string()[2..]).to_string();
         let value = 1;
         let tx_data = vec![1u8, 2, 3];
 
-        assert_eq!(client.add_transaction(&ctx1, destination.clone(), value, tx_data.clone()).unwrap(), 0);
+        assert_eq!(client.add_transaction(&ctx1, dest_address.clone(), value, tx_data.clone()).unwrap(), 0);
         assert_eq!(client.is_confirmed(&ctx1, 0).unwrap(), false);
         assert_eq!(client.confirm_transaction(&ctx1, 0), Ok(()));
         assert_eq!(client.is_confirmed(&ctx1, 0).unwrap(), false);
