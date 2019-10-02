@@ -6,12 +6,16 @@ describe('Deployments', () => {
   it ('should deploy non confidential', async () => {
     let multisig = await oasis.workspace.Multisig.deploy(
       ['b8b3666d8fea887d97ab54f571b8e5020c5c8b58'], 1,
-      { header: {confidential: false} }
+      {
+        header: {confidential: false},
+        gasLimit: '0xF42400'
+      }
     );
 
     var multisig_address = Buffer.from(multisig._inner.address).toString('hex');
     let counter = await oasis.workspace.MultisigCounter.deploy(multisig_address, {
-      header: {confidential: false}
+      header: {confidential: false},
+      gasLimit: '0xF42400'
     });
 
     expect(multisig).toBeTruthy();
@@ -41,12 +45,16 @@ describe('Test', () => {
   beforeAll(async () => {
     multisig = await oasis.workspace.Multisig.deploy(
       ['b8b3666d8fea887d97ab54f571b8e5020c5c8b58'], 1,
-      { header: {confidential: false} }
+      {
+        header: {confidential: false},
+        gasLimit: '0xF42400'
+      }
     );
 
     var multisig_address = Buffer.from(multisig._inner.address).toString('hex');
     counter = await oasis.workspace.MultisigCounter.deploy(multisig_address, {
-      header: {confidential: false}
+      header: {confidential: false},
+      gasLimit: '0xF42400'
     });
   });
 
@@ -55,17 +63,38 @@ describe('Test', () => {
     expect(counter).toBeTruthy();
   });
 
-  it('can make the cross contract call', async () => {
+  it('multisig getters work', async () => {
+    expect(await multisig.getRequired({gasLimit: '0xF42400'})).toEqual(1);
     for (var func of counter._inner.idl.functions) {
       if (func.name == 'increment') {
         let coder = oasis.utils.OasisCoder.plaintext();
         let txData = Array.from(await coder.encoder.encode(func, []));
         let counter_address = Buffer.from(counter._inner.address).toString('hex');
         expect(await multisig.addTransaction(counter_address, 0, txData, {gasLimit: '0xF42400'})).toEqual(0);
+        expect(await multisig.isConfirmed(0, {gasLimit: '0xF42400'})).toEqual(false);
         await multisig.confirmTransaction(0, {gasLimit: '0xF42400'});
         expect(await multisig.isConfirmed(0, {gasLimit: '0xF42400'})).toEqual(true);
+        await multisig.revokeConfirmation(0, {gasLimit: '0xF42400'});
+        expect(await multisig.isConfirmed(0, {gasLimit: '0xF42400'})).toEqual(false);
+        let tx = await multisig.getTransaction(0, {gasLimit: '0xF42400'});
+        expect(Buffer.from(tx.destination).toString('hex')).toEqual(counter_address);
+        expect(tx.value).toEqual(0);
+        expect(tx.data).toEqual(txData);
+      }
+    }
+  });
+
+  it('can make the cross contract call', async () => {
+    for (var func of counter._inner.idl.functions) {
+      if (func.name == 'increment') {
+        let coder = oasis.utils.OasisCoder.plaintext();
+        let txData = Array.from(await coder.encoder.encode(func, []));
+        let counter_address = Buffer.from(counter._inner.address).toString('hex');
+        expect(await multisig.addTransaction(counter_address, 0, txData, {gasLimit: '0xF42400'})).toEqual(1);
+        await multisig.confirmTransaction(1, {gasLimit: '0xF42400'});
+        expect(await multisig.isConfirmed(1, {gasLimit: '0xF42400'})).toEqual(true);
         expect(await counter.getCount({gasLimit: '0xF42400'})).toEqual(0);
-        let result = await multisig.executeTransaction(0, {gasLimit: '0xF42400'});
+        let result = await multisig.executeTransaction(1, {gasLimit: '0xF42400'});
         console.log(result);
         expect(await counter.getCount({gasLimit: '0xF42400'})).toEqual(1);
       }
