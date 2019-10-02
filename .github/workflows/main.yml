@@ -14,7 +14,11 @@ jobs:
       - name: Install Oasis
         run: curl --proto '=https' --tlsv1.2 -sSL https://get.oasis.dev | python - --speedrun
       - name: Lint
-        run: pushd app && npm run-script lint && popd
+        run: |
+          pushd app
+          npm install
+          npm run-script lint
+          popd
       - name: Build and test service
         run: |
           export PATH=~/.local/bin:-~/.cargo/bin:$PATH
