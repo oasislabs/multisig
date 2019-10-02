@@ -52,10 +52,8 @@ impl Multisig {
     }
 
     pub fn add_transaction(&mut self, ctx: &Context, destination: String, value: u64, data: Vec<u8>) -> Result<u32, Error> {
-        eprintln!("Owner? {}", self.owners.contains(&ctx.sender()));
-        eprintln!("Sender {}", ctx.sender());
-        eprintln!("Owners {:?}", self.owners);
         if !self.owners.contains(&ctx.sender()) {
+            eprintln!("Error");
             return Err(Error::MustBeOwner);
         }
         let transaction = Transaction {
@@ -81,24 +79,10 @@ impl Multisig {
         Ok(transaction.unwrap())
     }
 
-    pub fn get_owners(&self, ctx: &Context) -> Result<&Set<Address>, Error> {
-        // if !self.owners.contains(&ctx.sender()) {
-        //     return Err(Error::MustBeOwner);
-        // }
-        eprintln!("GetOwners sender {}", ctx.sender());
-        Ok(&self.owners)
-    }
-
-    pub fn check(&self, ctx: &Context) -> Result<bool, Error> {        eprintln!("Sender {}", ctx.sender());
-        eprintln!("Check sender {}", ctx.sender());
-
-        Ok(self.owners.contains(&ctx.sender()))
-    }
-
     pub fn get_required(&self, ctx: &Context) -> Result<u32, Error> {
-        // if !self.owners.contains(&ctx.sender()) {
-        //     return Err(Error::MustBeOwner);
-        // }
+        if !self.owners.contains(&ctx.sender()) {
+            return Err(Error::MustBeOwner);
+        }
         Ok(self.required)
     }
 
