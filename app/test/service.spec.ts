@@ -72,7 +72,7 @@ describe('Test', () => {
         let coder = oasis.utils.OasisCoder.plaintext();
         let txData = Array.from(await coder.encoder.encode(func, []));
         let counter_address = Buffer.from(counter._inner.address).toString('hex');
-        expect(await multisig.addTransaction(counter_address, 0, txData, {gasLimit: GAS_LIMIT})).toEqual(0);
+        expect(await multisig.addTransaction(counter._inner.address, 0, txData, {gasLimit: GAS_LIMIT})).toEqual(0);
         expect(await multisig.isConfirmed(0, {gasLimit: GAS_LIMIT})).toEqual(false);
         await multisig.confirmTransaction(0, {gasLimit: GAS_LIMIT});
         expect(await multisig.isConfirmed(0, {gasLimit: GAS_LIMIT})).toEqual(true);
@@ -92,7 +92,7 @@ describe('Test', () => {
         let coder = oasis.utils.OasisCoder.plaintext();
         let txData = Array.from(await coder.encoder.encode(func, []));
         let counter_address = Buffer.from(counter._inner.address).toString('hex');
-        expect(await multisig.addTransaction(counter_address, 0, txData, {gasLimit: GAS_LIMIT})).toEqual(1);
+        expect(await multisig.addTransaction(counter._inner.address, 0, txData, {gasLimit: GAS_LIMIT})).toEqual(1);
         await multisig.confirmTransaction(1, {gasLimit: GAS_LIMIT});
         expect(await multisig.isConfirmed(1, {gasLimit: GAS_LIMIT})).toEqual(true);
         expect(await counter.getCount({gasLimit: GAS_LIMIT})).toEqual(0);
