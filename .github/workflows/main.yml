@@ -12,7 +12,7 @@ jobs:
         with:
           node-version: 12.x
       - name: Install Oasis
-        run: curl --proto '=https' --tlsv1.2 -sSL https://get.oasis.dev | python - --speedrun
+        run: curl --proto '=https' --tlsv1.2 -sSL https://get.oasis.dev | python - --speedrun --toolchain unstable
       - name: Lint
         run: |
           pushd app
@@ -23,7 +23,6 @@ jobs:
         run: |
           export PATH=~/.local/bin:-~/.cargo/bin:$PATH
           export LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
-          oasis set-toolchain unstable
           oasis build
           oasis chain >& oasis.log &
           oasis test
