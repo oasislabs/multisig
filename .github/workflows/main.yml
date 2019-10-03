@@ -23,6 +23,7 @@ jobs:
         run: |
           export PATH=~/.local/bin:-~/.cargo/bin:$PATH
           export LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
+          oasis set-toolchain unstable
           oasis build
           oasis chain >& oasis.log &
           oasis test
