@@ -2,7 +2,6 @@
 extern crate serde;
 
 use oasis_std::{Context, Address};
-use std::str::FromStr;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize, failure::Fail)]
 pub enum Error {
@@ -17,10 +16,10 @@ struct MultisigCounter {
 }
 
 impl MultisigCounter {
-    pub fn new(_ctx: &Context, allowed: String) -> Self {
+    pub fn new(_ctx: &Context, allowed: Address) -> Self {
         Self {
             count: 0,
-            allowed: Address::from_str(&allowed).unwrap(),
+            allowed,
         }
     }
 
@@ -28,7 +27,7 @@ impl MultisigCounter {
         if self.allowed != ctx.sender() {
             return Err(Error::NotAllowed);
         }
-        self.count += 1;
+        self.count = self.count.checked_add(1).unwrap();
         Ok(())
     }
 
@@ -53,8 +52,7 @@ mod tests {
         let unauthorized = oasis_test::create_account(1);
         let ctx = Context::default().with_sender(sender);
         let unauthorized_ctx = Context::default().with_sender(unauthorized);
-        let allowed = (&sender.to_string()[2..]).to_string();
-        let mut client = MultisigCounter::new(&ctx, allowed);
+        let mut client = MultisigCounter::new(&ctx, sender);
 
         assert_eq!(client.increment(&ctx), Ok(()));
         assert_eq!(client.increment(&unauthorized_ctx), Err(Error::NotAllowed));

@@ -3,11 +3,32 @@ import oasis from '@oasislabs/client';
 jest.setTimeout(20000);
 
 const GAS_LIMIT = '0xF42400';
+const OWNERS = ['b8b3666d8fea887d97ab54f571b8e5020c5c8b58'];
+
+function hexStringToByte(str) {
+  if (!str) {
+    return new Uint8Array();
+  }
+
+  var a : number[] = [];
+  for (var i = 0, len = str.length; i < len; i+=2) {
+    a.push(parseInt(str.substr(i,2),16));
+  }
+  return new Uint8Array(a);
+}
+
+function parseAddresses(addresses) {
+  let parsed : Uint8Array[] = [];
+  for (var addr of addresses) {
+    parsed.push(hexStringToByte(addr));
+  }
+  return parsed
+}
 
 describe('Deployments', () => {
   it ('should deploy non confidential', async () => {
     let multisig = await oasis.workspace.Multisig.deploy(
-      ['b8b3666d8fea887d97ab54f571b8e5020c5c8b58'], 1,
+      parseAddresses(OWNERS), 1,
       {
         header: {confidential: false},
         gasLimit: GAS_LIMIT
@@ -15,7 +36,7 @@ describe('Deployments', () => {
     );
 
     var multisig_address = Buffer.from(multisig._inner.address).toString('hex');
-    let counter = await oasis.workspace.MultisigCounter.deploy(multisig_address, {
+    let counter = await oasis.workspace.MultisigCounter.deploy(multisig._inner.address, {
       header: {confidential: false},
       gasLimit: GAS_LIMIT
     });
@@ -26,12 +47,12 @@ describe('Deployments', () => {
 
   it ('should deploy confidential', async () => {
     let multisig = await oasis.workspace.Multisig.deploy(
-      ['b8b3666d8fea887d97ab54f571b8e5020c5c8b58'], 1,
+      parseAddresses(OWNERS), 1,
       { header: {confidential: true}, gasLimit: GAS_LIMIT}
     );
 
     var multisig_address = Buffer.from(multisig._inner.address).toString('hex');
-    let counter = await oasis.workspace.MultisigCounter.deploy(multisig_address, {
+    let counter = await oasis.workspace.MultisigCounter.deploy(multisig._inner.address, {
       header: {confidential: true},
       gasLimit: GAS_LIMIT
     });
@@ -46,7 +67,7 @@ describe('Test', () => {
 
   beforeAll(async () => {
     multisig = await oasis.workspace.Multisig.deploy(
-      ['b8b3666d8fea887d97ab54f571b8e5020c5c8b58'], 1,
+      parseAddresses(OWNERS), 1,
       {
         header: {confidential: false},
         gasLimit: GAS_LIMIT
@@ -54,7 +75,7 @@ describe('Test', () => {
     );
 
     var multisig_address = Buffer.from(multisig._inner.address).toString('hex');
-    counter = await oasis.workspace.MultisigCounter.deploy(multisig_address, {
+    counter = await oasis.workspace.MultisigCounter.deploy(multisig._inner.address, {
       header: {confidential: false},
       gasLimit: GAS_LIMIT
     });
