@@ -5,9 +5,6 @@ on: [push]
 jobs:
   build-test:
     runs-on: ubuntu-18.04
-    environment:
-      PATH: ~/.local/bin:-~/.cargo/bin:$PATH
-      LD_LIBRARY_PATH: $(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
 
     steps:
       - uses: actions/checkout@v1
@@ -24,6 +21,8 @@ jobs:
           popd
       - name: Build and test service
         run: |
+          export PATH=~/.local/bin:-~/.cargo/bin:$PATH
+          export LD_LIBRARY_PATH=$(rustc --print sysroot)/lib:$LD_LIBRARY_PATH
           oasis build
           oasis chain &
           oasis test
