@@ -2,7 +2,8 @@
 extern crate serde;
 
 use map_vec::{Map, Set};
-use oasis_std::{Context, Address, AddressExt};
+use oasis_std::{Context, Address, AddressExt as _};
+use std::iter::FromIterator as _;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize, failure::Fail)]
 pub enum Error {
@@ -35,16 +36,16 @@ struct Transaction {
 struct Multisig {
     transactions: Map<u32, Transaction>,
     owners: Set<Address>,
-    required: u32,
+    signatures_required: u32,
     transaction_count: u32,
 }
 
 impl Multisig {
-    pub fn new(_ctx: &Context, owners: Set<Address>, required: u32) -> Self {
+    pub fn new(_ctx: &Context, addresses: Vec<Address>, signatures_required: u32) -> Self {
         Self {
             transactions: Map::new(),
-            owners: owners,
-            required: required,
+            owners: Set::from_iter(addresses),
+            signatures_required,
             transaction_count: 0,
         }
     }
@@ -80,7 +81,7 @@ impl Multisig {
         if !self.owners.contains(&ctx.sender()) {
             return Err(Error::MustBeOwner);
         }
-        Ok(self.required)
+        Ok(self.signatures_required)
     }
 
     pub fn confirm_transaction(&mut self, ctx: &Context, transaction_id: u32) -> Result<(), Error> {
@@ -115,7 +116,7 @@ impl Multisig {
         if !transaction.is_some() {
             return Err(Error::TransactionNotExists);
         }
-        Ok(transaction.unwrap().confirmations.len() >= self.required as usize)
+        Ok(transaction.unwrap().confirmations.len() >= self.signatures_required as usize)
     }
 
     pub fn execute_transaction(&mut self, ctx: &Context, transaction_id: u32) -> Result<Vec<u8>, Error> {
@@ -127,7 +128,7 @@ impl Multisig {
             return Err(Error::TransactionNotExists);
         }
         let transaction = transaction_check.unwrap();
-        if transaction.confirmations.len() < self.required as usize {
+        if transaction.confirmations.len() < self.signatures_required as usize {
             return Err(Error::TransactionNotConfirmed);
         }
         if transaction.executed {
@@ -160,9 +161,7 @@ mod tests {
         let unauthorized = oasis_test::create_account(1);
         let ctx = Context::default().with_sender(sender);
         let unauthorized_ctx = Context::default().with_sender(unauthorized);
-        let mut addresses = Set::new();
-        addresses.insert(sender);
-        let mut client = Multisig::new(&ctx, addresses, 1);
+        let mut client = Multisig::new(&ctx, vec![sender], 1);
         let destination = oasis_test::create_account(0);
         let value = 1;
         let tx_data = vec![1u8, 2, 3];
@@ -186,10 +185,7 @@ mod tests {
         let sender2 = oasis_test::create_account(1);
         let ctx1 = Context::default().with_sender(sender1);
         let ctx2 = Context::default().with_sender(sender2);
-        let mut addresses = Set::new();
-        addresses.insert(sender1);
-        addresses.insert(sender2);
-        let mut client = Multisig::new(&ctx1, addresses, 2);
+        let mut client = Multisig::new(&ctx1, vec![sender1, sender2], 2);
         let destination = oasis_test::create_account(0);
         let value = 1;
         let tx_data = vec![1u8, 2, 3];
