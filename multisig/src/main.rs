@@ -3,7 +3,7 @@ extern crate serde;
 
 use map_vec::{Map, Set};
 use oasis_std::{Context, Address, AddressExt as _};
-use std::iter::FromIterator;
+use std::iter::FromIterator as _;
 
 #[derive(Debug, Eq, PartialEq, Serialize, Deserialize, failure::Fail)]
 pub enum Error {
